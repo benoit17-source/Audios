@@ -1,0 +1,6 @@
+# Modèles de voix Piper (~220 Mo, retéléchargeables via generate_audio.py --download-voices)
+voices/
+# Fichiers de travail
+build/
+*.wav
+__pycache__/
