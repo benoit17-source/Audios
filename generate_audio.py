@@ -16,7 +16,8 @@ Usage :
     python3 generate_audio.py --voice fr-gilles-low # autre voix
     python3 generate_audio.py --pause 15            # silence de réponse plus long
     python3 generate_audio.py --blocs 1 3           # seulement certains blocs
-    python3 generate_audio.py --samples             # échantillon des 4 voix
+    python3 generate_audio.py --source X.md         # autre document
+    python3 generate_audio.py --samples             # échantillon des voix
 """
 
 from __future__ import annotations
@@ -30,9 +31,8 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parent
-SOURCE = ROOT / "Orbis_Scripts_Audio.md"
+DEFAULT_SOURCE = ROOT / "Orbis_Scripts_Audio.md"
 VOICES_DIR = ROOT / "voices"
-OUT_DIR = ROOT / "audio"
 
 VOICE_RELEASE = "https://github.com/rhasspy/piper/releases/download/v0.0.2"
 AVAILABLE_VOICES = {
@@ -59,6 +59,7 @@ ACRONYMS = {
     "RPA": "R P A",
     "IA": "I A",
     "IT": "I T",
+    "RH": "R H",
     "P&amp;L": "P et L",
 }
 
@@ -318,7 +319,10 @@ def main() -> None:
                     help="facteur de durée : >1 ralentit, <1 accélère (défaut : 1.0)")
     ap.add_argument("--blocs", type=int, nargs="+", metavar="N",
                     help="ne générer que ces blocs (défaut : les 8)")
-    ap.add_argument("--out", type=Path, default=OUT_DIR, help="dossier de sortie")
+    ap.add_argument("--source", type=Path, default=DEFAULT_SOURCE,
+                    help="document markdown à lire (défaut : Orbis_Scripts_Audio.md)")
+    ap.add_argument("--out", type=Path, default=None,
+                    help="dossier de sortie (défaut : audio/ ou audio_<suffixe du source>/)")
     ap.add_argument("--no-playlists", action="store_true",
                     help="ne pas générer les deux playlists concaténées")
     ap.add_argument("--download-voices", action="store_true",
@@ -332,7 +336,14 @@ def main() -> None:
         download_voices(sorted(AVAILABLE_VOICES))
         return
 
-    blocs = parse_source(SOURCE)
+    if not args.source.exists():
+        raise SystemExit(f"Document introuvable : {args.source}")
+    if args.out is None:
+        # Orbis_Scripts_Audio.md -> audio/ ; Orbis_Scripts_Audio_3min.md -> audio_3min/
+        stem = args.source.stem.replace("Orbis_Scripts_Audio", "")
+        args.out = ROOT / f"audio{stem}"
+
+    blocs = parse_source(args.source)
     if args.blocs:
         wanted = set(args.blocs)
         blocs = [b for b in blocs if b.number in wanted]
