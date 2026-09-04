@@ -4,3 +4,4 @@ voices/
 build/
 *.wav
 __pycache__/
+*.zip
